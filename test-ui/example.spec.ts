@@ -6,6 +6,15 @@ test("check-home-site", async ({ page }) => {
   await expect(page.getByText("Hello World")).toBeInViewport();
   await expect(page.getByAltText("This is watman")).toBeInViewport();
 
+  await page.getByText("Factorial value").click();
+  await expect(page).toHaveURL("/site_a.html");
+  await page.goto("/");
+  await page.getByText("5th fibonacci number").click();
+  await expect(page).toHaveURL("/site_b.html");
+});
+
+test("check-home-menu-links", async ({ page }) => {
+  await page.goto("/");
   await page.getByRole("link", { name: "Site A" }).click();
   await expect(page).toHaveURL("/site_a.html");
   await page.goto("/");
@@ -17,9 +26,6 @@ test("check-factorial-site", async ({ page }) => {
   await page.goto("/site_a.html");
   await expect(page.getByText("120")).toBeInViewport();
   await expect(page.getByText("5!")).toBeInViewport();
-
-  await page.getByRole("link", { name: "Home" }).click();
-  await expect(page).toHaveURL("/");
 });
 
 test("check-fibonacci-site", async ({ page }) => {
