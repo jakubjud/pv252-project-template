@@ -54,7 +54,7 @@ test("va2am-homepage-links", async ({ page }) => {
     page.waitForEvent("popup"),
     page.getByRole("link").filter({ has: image }).click()
   ]);
-  await newPage.waitForLoadState();
+  await newPage.waitForLoadState("domcontentloaded");
   await expect(newPage).toHaveURL("https://csirt.cesnet.cz/cs/index");
 });
 
