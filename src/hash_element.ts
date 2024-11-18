@@ -1,5 +1,4 @@
 import { FASTElement, html, observable, when } from "@microsoft/fast-element";
-import { AsyncSha256 } from "./sha-256.js";
 
 /**
  * The purpose of `HashElement` is to compute the SHA256 checksum of the given file, using the
@@ -7,9 +6,6 @@ import { AsyncSha256 } from "./sha-256.js";
  * final hash once computed.
  */
 export class HashElement extends FASTElement {
-  // Time when the computation was started (to compute elapsed time).
-  #started: Date;
-
   /*
         Note that all of these are observable properties and not attributes, 
         because these are not intended to be "parameters" of the element, but
@@ -38,37 +34,16 @@ export class HashElement extends FASTElement {
 
   constructor(file: File) {
     super();
-    this.#started = new Date();
     this.fileName = file.name;
 
-    // Read the file and then start computing the hash.
-    // TODO: We want to "move" this computation into a WebWorker so that it
-    // does not interfere with the rest of the UI.
-    const reader = new FileReader();
-    reader.onload = () => {
-      // The result should always be a string in this case.
-      const fileData = reader.result as string;
-
-      // At this point, we know how much data we have.
-      this.total = fileData.length;
-
-      const hasher = new AsyncSha256();
-      hasher.async_digest(
-        fileData,
-        (hash) => {
-          // We are done.
-          this.hash = hash;
-          this.remaining = 0;
-          this.elapsed = new Date().getTime() - this.#started.getTime();
-        },
-        (remaining) => {
-          // Update progress.
-          this.remaining = remaining;
-          this.elapsed = new Date().getTime() - this.#started.getTime();
-        },
-      );
+    const hash_worker = new Worker(new URL("./hash_worker.ts", import.meta.url));
+    hash_worker.postMessage(file);
+    hash_worker.onmessage = (e) => {
+      this.hash = e.data.hash;
+      this.remaining = e.data.remaining;
+      this.elapsed = e.data.elapsed;
+      this.total = e.data.total;
     };
-    reader.readAsText(file);
   }
 }
 
@@ -96,7 +71,7 @@ const hashElementTemplate = html<HashElement>`
         )}
       `,
     )}
-    <b>Elapsed:</b> <code>${(x) => Math.floor(x.elapsed / 100) / 10} s</code>
+    <b>Elapsed:</b> <code>${(x) => (x.elapsed / 100 / 10).toFixed(3)} s</code>
   </div>
 `;
 
